@@ -23,7 +23,7 @@ from sklearn.metrics import roc_auc_score
 CORES = multiprocessing.cpu_count() // 2
 
 
-def BPR_train_original(dataset, recommend_model, loss_class, epoch, neg_k=1, w=None):
+def BPR_train_original(dataset, recommend_model, loss_class, epoch,   neg_k=1, w=None):
     Recmodel = recommend_model
     Recmodel.train()
     bpr: utils.BPRLoss = loss_class

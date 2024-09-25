@@ -226,6 +226,7 @@ class Loader(BasicDataset):
         cprint(f'loading [{path}]')
         self.split = config['A_split']
         self.folds = config['A_n_fold']
+        self.sample_size = config['data_sample_size']
         self.mode_dict = {'train': 0, "test": 1}
         self.mode = self.mode_dict['train']
         self.n_user = 0
@@ -238,9 +239,14 @@ class Loader(BasicDataset):
         self.traindataSize = 0
         self.testDataSize = 0
 
+        
         with open(train_file) as f:
-            for l in f.readlines():
-                if len(l) > 0:
+            all_lines = f.readlines()
+            len_all = len(all_lines)
+            k = 0
+            for l in all_lines:
+                k += 1
+                if (len(l) > 0) and  (k < len_all * self.sample_size):
                     l = l.strip('\n').split(' ')
                     items = [int(i) for i in l[1:]]
                     uid = int(l[0])
@@ -255,8 +261,12 @@ class Loader(BasicDataset):
         self.trainItem = np.array(trainItem)
 
         with open(test_file) as f:
-            for l in f.readlines():
-                if len(l) > 0:
+            all_lines = f.readlines()
+            len_all = len(all_lines)
+            k = 0
+            for l in all_lines:
+                k += 1
+                if (len(l) > 0) and  (k < len_all * self.sample_size):
                     l = l.strip('\n').split(' ')
                     items = [int(i) for i in l[1:]]
                     uid = int(l[0])
