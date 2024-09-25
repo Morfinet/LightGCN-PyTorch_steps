@@ -96,10 +96,16 @@ class LightGCN(BasicModel):
         self.n_layers = self.config['lightGCN_n_layers']
         self.keep_prob = self.config['keep_prob']
         self.A_split = self.config['A_split']
+        self.trained_sum = self.config['train_sum']
         self.embedding_user = torch.nn.Embedding(
             num_embeddings=self.num_users, embedding_dim=self.latent_dim)
         self.embedding_item = torch.nn.Embedding(
             num_embeddings=self.num_items, embedding_dim=self.latent_dim)
+        
+        if self.trained_sum:
+            self.coefficients = nn.Parameter(torch.randn(self.n_layers+1))
+        else:
+            self.coefficients = None
         if self.config['pretrain'] == 0:
 #             nn.init.xavier_uniform_(self.embedding_user.weight, gain=1)
 #             nn.init.xavier_uniform_(self.embedding_item.weight, gain=1)
@@ -166,11 +172,16 @@ class LightGCN(BasicModel):
                 all_emb = torch.sparse.mm(g_droped, all_emb)
             embs.append(all_emb)
         embs = torch.stack(embs, dim=1)
-        #print(embs.size())
+        # print(embs.size())
         
        #TODO вот тут возможна оптимизация. Брать не просто средние, а как-то умнее
-        light_out = torch.mean(embs, dim=1)
-        users, items = torch.split(light_out, [self.num_users, self.num_items])
+        if self.trained_sum:
+            light_out = torch.einsum('ijk,j->ik', embs, self.coefficients)
+            users, items = torch.split(light_out, [self.num_users, self.num_items])
+        else:
+            light_out = torch.mean(embs, dim=1)
+            users, items = torch.split(light_out, [self.num_users, self.num_items])
+            
         return users, items
     
     def getUsersRating(self, users):

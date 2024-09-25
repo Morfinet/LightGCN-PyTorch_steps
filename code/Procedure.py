@@ -137,8 +137,12 @@ def Test(dataset, Recmodel, epoch, w=None, multicore=0):
             results['precision'] += result['precision']
             results['ndcg'] += result['ndcg']
         results['recall'] /= float(len(users))
+        results['recall'] = list(results['recall'])
         results['precision'] /= float(len(users))
+        results['precision'] = list(results['precision'])
         results['ndcg'] /= float(len(users))
+        results['ndcg'] = list(results['ndcg'])
+
         # results['auc'] = np.mean(auc_record)
         if world.tensorboard:
             w.add_scalars(f'Test/Recall@{world.topks}',
@@ -149,5 +153,6 @@ def Test(dataset, Recmodel, epoch, w=None, multicore=0):
                           {str(world.topks[i]): results['ndcg'][i] for i in range(len(world.topks))}, epoch)
         if multicore == 1:
             pool.close()
-        print(results)
-        return results
+        
+        print(results, Recmodel.coefficients)
+        return results, Recmodel.coefficients

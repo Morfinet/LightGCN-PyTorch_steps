@@ -14,6 +14,7 @@ print(">>SEED:", world.seed)
 import register
 from register import dataset
 
+
 Recmodel = register.MODELS[world.model_name](world.config, dataset)
 Recmodel = Recmodel.to(world.device)
 bpr = utils.BPRLoss(Recmodel, world.config)
@@ -36,16 +37,34 @@ if world.tensorboard:
 else:
     w = None
     world.cprint("not enable tensorflowboard")
-
+all_results, all_coefs, all_loss = {}, {}, {}
 try:
     for epoch in range(world.TRAIN_epochs):
         start = time.time()
         if epoch %10 == 0:
             cprint("[TEST]")
-            Procedure.Test(dataset, Recmodel, epoch, w, world.config['multicore'])
+            results, coefs = Procedure.Test(dataset, Recmodel, epoch, w, world.config['multicore'])
+            all_results[epoch] = results
+            
+            if world.config['train_sum']:
+                all_coefs[epoch] = list(coefs.detach().numpy())
+            else:
+                all_coefs[epoch] = 0
         output_information = Procedure.BPR_train_original(dataset, Recmodel, bpr, epoch, neg_k=Neg_k,w=w)
+        all_loss[epoch] =  float(output_information.split('-')[0][4:])
         print(f'EPOCH[{epoch+1}/{world.TRAIN_epochs}] {output_information}')
         torch.save(Recmodel.state_dict(), weight_file)
 finally:
     if world.tensorboard:
         w.close()
+
+import pickle
+n_layers = world.config["lightGCN_n_layers"]
+n_layers = world.config["lightGCN_n_layers"]
+tr_sum = 'weights_yes' if world.config['train_sum'] else 'weights_no'
+with open(f'metrics/all_results_{n_layers}_layers_{tr_sum}.pickle', 'wb') as f:
+    pickle.dump(all_results, f, protocol=pickle.HIGHEST_PROTOCOL)
+with open(f'metrics/all_coefs_{n_layers}_layers_{tr_sum}.pickle', 'wb') as f:
+    pickle.dump(all_coefs, f, protocol=pickle.HIGHEST_PROTOCOL)
+with open(f'metrics/all_loss_{n_layers}_layers_{tr_sum}.pickle', 'wb') as f:
+    pickle.dump(all_loss, f, protocol=pickle.HIGHEST_PROTOCOL)    
